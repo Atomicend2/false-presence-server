@@ -190,12 +190,35 @@ async def handler(ws):
                 await room.lobby()
 
 
+APK_URL = os.environ.get("APK_URL", "").strip()
+_HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+def _page() -> bytes:
+    try:
+        html = open(os.path.join(_HERE, "landing.html"), encoding="utf-8").read()
+    except OSError:
+        return ("ok rooms=%d\n" % len(rooms)).encode()
+    if APK_URL:
+        btn = '<a class="btn" href="/download">DOWNLOAD FOR ANDROID</a>'
+    else:
+        btn = '<span class="btn off">DOWNLOAD COMING SOON</span>'
+    n = len(rooms)
+    return html.replace("__BUTTON__", btn).replace("__ROOMS__", str(n)).replace("__S__", "" if n == 1 else "S").encode()
+
+
 async def health(connection, request):
-    # plain HTTP hit (health check / uptime ping): answer 200 so free hosts keep us alive
-    if request.headers.get("Upgrade", "").lower() != "websocket":
+    # plain HTTP: the website, a health check for uptime pings, and the APK redirect. WebSockets pass through.
+    if request.headers.get("Upgrade", "").lower() == "websocket":
+        return None
+    path = request.path.split("?")[0]
+    if path in ("/health", "/healthz"):
         body = ("ok rooms=%d\n" % len(rooms)).encode()
         return Response(200, "OK", Headers([("Content-Type", "text/plain"), ("Content-Length", str(len(body)))]), body)
-    return None
+    if path == "/download" and APK_URL:
+        return Response(302, "Found", Headers([("Location", APK_URL), ("Content-Length", "0")]), b"")
+    body = _page()
+    return Response(200, "OK", Headers([("Content-Type", "text/html; charset=utf-8"), ("Content-Length", str(len(body))), ("Cache-Control", "no-cache")]), body)
 
 
 async def reaper():

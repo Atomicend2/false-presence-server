@@ -15,3 +15,9 @@ If Render asks for a card, run it on a PC instead: `pip install websockets` then
 and `cloudflared tunnel --url http://localhost:8765`.
 
 Test locally: `python test_relay.py` (all lines should say PASS).
+
+## Website + download button
+The server's home page (`/`) is now a sleek landing page for the game. `/health` is the plain "ok rooms=N" check.
+To turn on the Download button: Render dashboard -> your service -> Environment -> add `APK_URL` = the direct link to the APK
+(for example `https://github.com/Atomicend2/The-false-presence/releases/latest/download/the_false_presence.apk`, which only works
+if that repo is public). Save and Render restarts it.
